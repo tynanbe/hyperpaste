@@ -1,28 +1,31 @@
-import gleam/io
+import gleam/int
 import gleam/iterator
-import gleam/string
+import gleam/result
 import shellout.{StderrToStdout}
 
-pub const char_limit = 720
+pub const default_chunk_size = 720
 
 pub fn main(args: List(String)) -> NoReturn {
   case shellout.cmd("xsel", ["-ob"], [StderrToStdout(True)]) {
     Ok(#(output, status)) -> {
-      case 0 == status {
-        False -> iterator.from_list(output)
-        True -> {
-          let chunk_size = char_limit
-
-          iterator.from_list(output)
-        }
+      let chunk_size = case args {
+        [chunk_size, .._] ->
+          chunk_size
+          |> int.parse
+          |> result.unwrap(default_chunk_size)
+        _ -> default_chunk_size
       }
-      |> iterator.map(with: io.println)
+      output
+      |> iterator.from_list
+      |> iterator.map(with: fn(line) {
+        shellout.cmd("xdopaste", [line], [StderrToStdout(True)])
+      })
       |> iterator.run
       status
     }
 
     Error(reason) -> {
-      io.println(reason)
+      shellout.cmd("xdopaste", [reason], [StderrToStdout(True)])
       1
     }
   }
