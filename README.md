@@ -1,4 +1,4 @@
-# hyperpaste
+# hyperpaste 🍜
 
 **Split and paste text piece by piece**
 
